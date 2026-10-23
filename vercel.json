@@ -1,7 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -16,8 +17,28 @@
       "destination": "/api/index.py"
     },
     {
-      "source": "/((?!api/|docs|openapi.json).*)",
+      "source": "/((?!assets/|favicon.ico|api/|docs|openapi.json|.*\\.[\\w]+$).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*).js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*).css",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css; charset=utf-8"
+        }
+      ]
     }
   ]
 }

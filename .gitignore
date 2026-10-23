@@ -81,6 +81,7 @@ venv/
 .pytest_cache/
 frontend/node_modules/
 frontend/dist/
+dist/
 frontend/.vite/
 data/
 logs/
