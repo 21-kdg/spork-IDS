@@ -17,6 +17,7 @@ def list_alerts(
     scenario: Optional[str] = Query(None, description="Filter by scenario name"),
     ip: Optional[str] = Query(None, description="Filter by attacker IP"),
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by status: active, resolved, dismissed"),
+    is_simulated: Optional[bool] = Query(None, description="Filter simulated alerts"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(25, ge=1, le=100, description="Items per page"),
 ):
@@ -31,6 +32,8 @@ def list_alerts(
         query = query.filter(AlertModel.source_ip == ip.strip())
     if status_filter:
         query = query.filter(AlertModel.status == status_filter.lower())
+    if is_simulated is not None:
+        query = query.filter(AlertModel.is_simulated == is_simulated)
 
     total = query.count()
     items = (

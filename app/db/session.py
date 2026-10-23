@@ -38,6 +38,24 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     """Initializes all database tables registered with Base."""
-    # Import models here to ensure they are registered with Base metadata
     from app.models import db_models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+
+    # Safe migration for existing SQLite databases to add is_simulated column if missing
+    if settings.SPORK_DATABASE_URL.startswith("sqlite"):
+        try:
+            with engine.connect() as conn:
+                from sqlalchemy import text
+                # Check events table columns
+                result = conn.execute(text("PRAGMA table_info(events)")).fetchall()
+                event_cols = [r[1] for r in result]
+                if "is_simulated" not in event_cols:
+                    conn.execute(text("ALTER TABLE events ADD COLUMN is_simulated BOOLEAN DEFAULT 0"))
+                # Check alerts table columns
+                result = conn.execute(text("PRAGMA table_info(alerts)")).fetchall()
+                alert_cols = [r[1] for r in result]
+                if "is_simulated" not in alert_cols:
+                    conn.execute(text("ALTER TABLE alerts ADD COLUMN is_simulated BOOLEAN DEFAULT 0"))
+                conn.commit()
+        except Exception:
+            pass

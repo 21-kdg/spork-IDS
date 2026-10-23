@@ -57,65 +57,72 @@ CrowdSec's upstream security engine is implemented in Go. In strict adherence to
 
 ```
 spork-IDS/
+├── api/                     # Vercel serverless entry point
+│   └── index.py             # ASGI entry point for FastAPI on Vercel
 ├── app/
-│   ├── api/                     # REST API route controllers
-│   │   ├── alerts.py            # Alert filtering, retrieval, and status management
-│   │   ├── dashboard.py         # Aggregated SOC overview metrics & trends
-│   │   ├── decisions.py         # Remediation policies (bans, throttles, unbans)
-│   │   ├── events.py            # Event stream and raw log ingestion
-│   │   ├── health.py            # Service health & uptime indicator
-│   │   ├── metrics.py           # Granular bucket and engine telemetry
-│   │   ├── router.py            # Top-level API router mounting all modules
-│   │   ├── scenarios.py         # Scenario catalog & live evaluation sandbox
-│   │   └── settings.py          # Configuration & CrowdSec LAPI connection tester
-│   ├── core/                    # Settings, security & structured logging
-│   │   ├── config.py            # Pydantic Settings (.env, defaults)
-│   │   ├── logging.py           # Structured logger setup
-│   │   └── security.py          # API key header authorization (X-Api-Key)
-│   ├── db/                      # Persistence layer
-│   │   ├── base.py              # Declarative base
-│   │   ├── seed.py              # Realistic sample attack & event seeder
-│   │   └── session.py           # SQLAlchemy SQLite connection & sessionmaker
-│   ├── detection/               # Pure Python Detection Engine
-│   │   ├── buckets.py           # LeakyBucket, TriggerBucket, and UniqBucket primitives
-│   │   ├── engine.py            # Central coordinator, bucket instances & sandbox
-│   │   └── scenarios.py         # Built-in scenarios and filter predicates
-│   ├── integrations/            # External security integrations
-│   │   └── crowdsec_client.py   # CrowdSec Local API (LAPI) client adapter
-│   ├── models/                  # Database tables & validation schemas
-│   │   ├── db_models.py         # SQLAlchemy models (Events, Alerts, Decisions, Stats)
-│   │   └── schemas.py           # Pydantic request/response schemas
-│   ├── services/                # Business logic & pipeline
-│   │   ├── decision_manager.py  # TTL ban calculation, expiration & unban
-│   │   ├── enrichment.py        # Subnet/RFC1918/GeoIP classifier & risk scoring
-│   │   ├── metrics_service.py   # Trend & telemetry calculator
-│   │   ├── parser.py            # Log parsing (SSH, Nginx, Syslog, Windows, Firewall)
-│   │   └── pipeline.py          # Ingestion coordinator (Parse -> Enrich -> Save -> Detect)
-│   └── main.py                  # FastAPI application entry point & static SPA mounting
-├── frontend/                    # Modern React + TypeScript + Tailwind CSS UI
+│   ├── api/                 # REST API route controllers
+│   │   ├── alerts.py        # Alert filtering, retrieval, and status management
+│   │   ├── dashboard.py     # Aggregated SOC overview metrics & trends
+│   │   ├── decisions.py     # Remediation policies (bans, throttles, unbans)
+│   │   ├── events.py        # Event stream and raw log ingestion
+│   │   ├── health.py        # Service health & uptime indicator
+│   │   ├── metrics.py       # Granular bucket and engine telemetry
+│   │   ├── router.py        # Top-level API router mounting all modules
+│   │   ├── scenarios.py     # Scenario catalog & evaluation sandbox
+│   │   ├── settings.py      # Configuration & CrowdSec LAPI connection tester
+│   │   └── simulation.py    # Live attack simulation & burst control endpoints
+│   ├── core/                # Settings, security & structured logging
+│   │   ├── config.py        # Pydantic Settings (.env, defaults, Vercel /tmp)
+│   │   ├── logging.py       # Structured logger setup
+│   │   └── security.py      # API key header authorization (X-Api-Key)
+│   ├── db/                  # Persistence layer
+│   │   ├── base.py          # Declarative base
+│   │   ├── seed.py          # Realistic sample attack & event seeder
+│   │   └── session.py       # SQLAlchemy SQLite connection & auto-migration
+│   ├── detection/           # Pure Python Detection Engine
+│   │   ├── buckets.py       # LeakyBucket, TriggerBucket, and UniqBucket primitives
+│   │   ├── engine.py        # Central coordinator, bucket instances & sandbox
+│   │   └── scenarios.py     # Built-in scenarios and filter predicates
+│   ├── integrations/        # External security integrations
+│   │   └── crowdsec_client.py # CrowdSec Local API (LAPI) client adapter
+│   ├── models/              # Database tables & validation schemas
+│   │   ├── db_models.py     # SQLAlchemy models (Events, Alerts, Decisions, Stats, is_simulated)
+│   │   └── schemas.py       # Pydantic request/response schemas & simulation models
+│   ├── services/            # Business logic & pipeline
+│   │   ├── decision_manager.py # TTL ban calculation, expiration & unban
+│   │   ├── enrichment.py    # Subnet/RFC1918/GeoIP classifier & risk scoring
+│   │   ├── metrics_service.py # Trend & telemetry calculator
+│   │   ├── parser.py        # Robust log parsing (SSH Auth/PAM, Nginx, Syslog, Windows, Firewall)
+│   │   ├── pipeline.py      # Ingestion coordinator (Parse -> Enrich -> Save -> Detect)
+│   │   └── simulator.py     # Live multi-scenario attack generator & continuous stream
+│   └── main.py              # FastAPI application entry point & static SPA mounting
+├── frontend/                # Modern React + TypeScript + Tailwind CSS UI
 │   ├── src/
-│   │   ├── components/          # Sidebar, Navbar, status badges
-│   │   ├── pages/               # Overview, Alerts, Events, Detection, Decisions, Metrics, Settings
-│   │   ├── services/            # api.ts (REST client targeting /api)
-│   │   ├── types/               # TypeScript interfaces matching backend models
-│   │   ├── App.tsx              # Main layout, router & attack simulator
-│   │   └── main.tsx             # React entry point
+│   │   ├── components/      # Sidebar, Navbar, AttackSimulatorWidget, status badges
+│   │   ├── pages/           # Overview, Alerts, Events, Detection, Decisions, Metrics, Settings
+│   │   ├── services/        # api.ts (REST client with in-browser preview simulation fallback)
+│   │   ├── types/           # TypeScript interfaces matching backend models
+│   │   ├── App.tsx          # Main layout, router & attack simulator
+│   │   └── main.tsx         # React entry point
 │   ├── index.html
 │   ├── package.json
 │   ├── tailwind.config.js
 │   └── vite.config.ts
-├── tests/                       # Automated Pytest suite (24 tests)
-│   ├── conftest.py              # Test database (in-memory SQLite with StaticPool)
-│   ├── test_api.py              # REST API endpoint integration tests
-│   ├── test_detection.py        # Leaky bucket, trigger, and uniq unit tests
-│   ├── test_integrations.py     # CrowdSec client offline/fallback tests
-│   └── test_parser.py           # SSH, Nginx, SQLi, and Windows parser tests
-├── data/                        # Persistent SQLite database storage (git-ignored)
-├── requirements.txt             # Python runtime dependencies
-├── requirements-dev.txt         # Dev & test dependencies (pytest, pytest-asyncio)
-├── .env.example                 # Example configuration
-├── run.py                       # Root launcher script
-└── README.md                    # Project documentation
+├── tests/                   # Automated Pytest suite (31 tests)
+│   ├── conftest.py          # Test database (in-memory SQLite with StaticPool)
+│   ├── test_api.py          # REST API endpoint integration tests
+│   ├── test_detection.py    # Leaky bucket, trigger, and uniq unit tests
+│   ├── test_integrations.py # CrowdSec client offline/fallback tests
+│   ├── test_parser.py       # SSH (auth failure & accepted), Nginx, SQLi, and Windows parser tests
+│   └── test_simulation.py   # Live attack simulation & burst lifecycle tests
+├── data/                    # Persistent SQLite database storage (git-ignored)
+├── package.json             # Root monorepo script coordinator
+├── vercel.json              # Vercel deployment & serverless routing configuration
+├── requirements.txt         # Python runtime dependencies
+├── requirements-dev.txt     # Dev & test dependencies (pytest, pytest-asyncio)
+├── .env.example             # Example configuration
+├── run.py                   # Root launcher script
+└── README.md                # Project documentation
 ```
 
 ---
@@ -290,15 +297,38 @@ tests/test_parser.py::test_parse_http_sqli_signature PASSED
 tests/test_parser.py::test_parse_http_path_traversal PASSED
 tests/test_parser.py::test_parse_windows_event PASSED
 tests/test_parser.py::test_parse_firewall_drop PASSED
+tests/test_simulation.py::test_simulation_scenarios_list PASSED
+tests/test_simulation.py::test_simulation_launch_ssh_brute_force PASSED
+tests/test_simulation.py::test_simulation_launch_sqli PASSED
+tests/test_simulation.py::test_simulation_launch_benign PASSED
+tests/test_scenarios.py::test_scenarios_simulate_alias PASSED
+tests/test_simulation.py::test_simulation_status_and_lifecycle PASSED
+tests/test_simulation.py::test_simulation_reset PASSED
 
-============================= 24 passed in 0.22s =============================
+============================= 31 passed in 1.37s =============================
 ```
 
 ---
 
-## 9. Git Commands for Review & Pushing to GitHub
+## 9. Live Attack Simulation Engine & Vercel Deployment
 
-All work has been developed cleanly on the feature branch `feature/spork-ui-redesign`.
+Spork-IDS comes equipped with an interactive **Live Attack Simulator** accessible directly from the top navigation bar and dashboard widgets:
+
+### Supported Attack Scenarios
+- **SSH Brute-Force (`spork/ssh-bf`):** Fires rapid burst of failed SSH authentications triggering the Leaky Bucket and enforcing an automatic 4-hour IP ban.
+- **SQL Injection (`spork/http-sqli`):** Generates malicious HTTP requests containing SQL union/tautology signatures, triggering the immediate zero-tolerance Trigger Bucket.
+- **Path Traversal (`spork/http-path-traversal`):** Emits directory traversal probes (`/static/../../../../etc/passwd`) overflowing the HTTP Trigger Bucket.
+- **Port Scan (`spork/port-scan`):** Simulates multi-port SYN probing across distinct ports triggering the Uniq Bucket.
+- **Benign Traffic Pulse:** Emits clean normal traffic to demonstrate low false-positive rates.
+
+### Vercel Deployment
+The repository includes a ready-to-deploy `vercel.json` and `api/index.py`:
+- **Fullstack Deployment:** Automatically runs the Vite frontend and compiles the Python FastAPI backend as a serverless ASGI handler.
+- **Static Preview Deployment:** If deployed as a standalone frontend, the built-in client simulation engine activates automatically, providing interactive telemetry, logs, and simulated alerts with zero setup.
+
+---
+
+## 10. Git Commands for Review & Pushing to GitHub
 
 To review git status, commit your changes, and push to GitHub:
 
@@ -306,14 +336,14 @@ To review git status, commit your changes, and push to GitHub:
 # 1. Review status of modified and untracked files
 git status
 
-# 2. Stage the new Python backend, frontend source, and tests
+# 2. Stage verified changes
 git add .
 
 # 3. Commit with a structured message
-git commit -m "feat: implement Python-based detection engine and modern UI for Spork-IDS"
+git commit -m "Fix IDS detection pipeline, live attack simulation, and Vercel deployment"
 
-# 4. Push the feature branch to your GitHub repository
-git push -u origin feature/spork-ui-redesign
+# 4. Push to origin main
+git push origin main
 ```
 
 ---

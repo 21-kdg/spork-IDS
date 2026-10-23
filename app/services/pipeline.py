@@ -15,7 +15,10 @@ class IngestionPipeline:
 
     @staticmethod
     def process_raw_line(
-        db: Session, raw_line: str, service_hint: Optional[str] = None
+        db: Session,
+        raw_line: str,
+        service_hint: Optional[str] = None,
+        is_simulated: bool = False,
     ) -> Dict[str, Any]:
         """Processes a single raw log string through the full Spork-IDS security pipeline."""
         parsed: ParsedEvent = parse_log_line(raw_line, service_hint=service_hint)
@@ -29,6 +32,7 @@ class IngestionPipeline:
             action=parsed.action,
             raw_log=parsed.raw_log,
             is_suspicious=parsed.is_suspicious,
+            is_simulated=is_simulated,
         )
         event_record.meta_data = parsed.meta_data
         event_record.enrichment = enrichment
@@ -47,6 +51,7 @@ class IngestionPipeline:
             "meta_data": parsed.meta_data,
             "enrichment": enrichment,
             "timestamp": parsed.timestamp,
+            "is_simulated": is_simulated,
         }
 
         overflows: List[OverflowEvent] = detection_engine.process_event(event_dict)
@@ -74,10 +79,12 @@ class IngestionPipeline:
                 stop_at=datetime.utcfromtimestamp(overflow.stop_at_epoch),
                 created_at=now,
                 status="active",
+                is_simulated=is_simulated,
             )
             alert_record.meta_data = {
                 "contributing_events": overflow.contributing_events,
                 "enrichment": enrichment,
+                "is_simulated": is_simulated,
             }
 
             db.add(alert_record)
@@ -95,7 +102,7 @@ class IngestionPipeline:
                 scenario=scenario.name,
                 origin="spork-ids",
                 alert_id=alert_record.id,
-                simulated=False,
+                simulated=is_simulated,
             )
             decisions_created.append(decision)
 
@@ -105,8 +112,31 @@ class IngestionPipeline:
             "service": parsed.service,
             "action": parsed.action,
             "is_suspicious": parsed.is_suspicious,
+            "is_simulated": is_simulated,
             "alerts_triggered": len(alerts_created),
             "decisions_created": len(decisions_created),
+            "alerts": [
+                {
+                    "id": a.id,
+                    "uuid": a.uuid,
+                    "scenario": a.scenario,
+                    "severity": a.severity,
+                    "source_ip": a.source_ip,
+                    "message": a.message,
+                }
+                for a in alerts_created
+            ],
+            "decisions": [
+                {
+                    "id": d.id,
+                    "uuid": d.uuid,
+                    "type": d.type,
+                    "value": d.value,
+                    "duration": d.duration,
+                    "scenario": d.scenario,
+                }
+                for d in decisions_created
+            ],
         }
 
     @staticmethod

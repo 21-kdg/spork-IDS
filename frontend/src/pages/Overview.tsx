@@ -11,12 +11,14 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { DashboardSummary, Alert } from '../types';
+import { AttackSimulatorWidget } from '../components/AttackSimulatorWidget';
 
 interface OverviewProps {
   summary: DashboardSummary | null;
   isLoading: boolean;
   onNavigate: (page: string) => void;
   onSelectAlert: (alert: Alert) => void;
+  onRefresh?: () => void;
 }
 
 export const Overview: React.FC<OverviewProps> = ({
@@ -24,6 +26,7 @@ export const Overview: React.FC<OverviewProps> = ({
   isLoading,
   onNavigate,
   onSelectAlert,
+  onRefresh,
 }) => {
   if (isLoading && !summary) {
     return (
@@ -48,6 +51,9 @@ export const Overview: React.FC<OverviewProps> = ({
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
+      {/* Live Attack Simulation Engine */}
+      <AttackSimulatorWidget onRefresh={onRefresh} />
+
       {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Total Events */}
@@ -242,7 +248,16 @@ export const Overview: React.FC<OverviewProps> = ({
                           {alert.severity}
                         </span>
                       </td>
-                      <td className="py-3 text-slate-200 font-medium">{alert.scenario}</td>
+                      <td className="py-3 text-slate-200 font-medium">
+                        <div className="flex items-center space-x-1.5">
+                          <span>{alert.scenario}</span>
+                          {alert.is_simulated && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                              SIMULATED
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 text-sky-400">{alert.source_ip}</td>
                       <td className="py-3 text-slate-300">{alert.events_count} events</td>
                       <td className="py-3">

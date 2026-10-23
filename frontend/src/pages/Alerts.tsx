@@ -31,6 +31,7 @@ export const Alerts: React.FC<AlertsProps> = ({
   const [severity, setSeverity] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [simulatedOnly, setSimulatedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(initialSelectedAlert || null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export const Alerts: React.FC<AlertsProps> = ({
         severity: severity || undefined,
         ip: search || undefined,
         status: statusFilter || undefined,
+        is_simulated: simulatedOnly ? true : undefined,
         page,
         page_size: pageSize,
       });
@@ -62,7 +64,7 @@ export const Alerts: React.FC<AlertsProps> = ({
 
   useEffect(() => {
     loadAlerts();
-  }, [page, severity, statusFilter]);
+  }, [page, severity, statusFilter, simulatedOnly]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +177,19 @@ export const Alerts: React.FC<AlertsProps> = ({
             <option value="resolved">Resolved</option>
             <option value="dismissed">Dismissed</option>
           </select>
+
+          <label className="flex items-center space-x-2 text-xs font-mono text-purple-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={simulatedOnly}
+              onChange={(e) => {
+                setSimulatedOnly(e.target.checked);
+                setPage(1);
+              }}
+              className="rounded bg-slate-900 border-slate-800 text-purple-500 focus:ring-0 focus:outline-none"
+            />
+            <span>Simulated only</span>
+          </label>
         </div>
       </div>
 
@@ -219,7 +234,16 @@ export const Alerts: React.FC<AlertsProps> = ({
                         {alert.severity}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-medium text-slate-200">{alert.scenario}</td>
+                    <td className="py-3 px-4 font-medium text-slate-200">
+                      <div className="flex items-center space-x-1.5">
+                        <span>{alert.scenario}</span>
+                        {alert.is_simulated && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                            SIMULATED
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-3 px-4 text-sky-400 font-semibold">{alert.source_ip}</td>
                     <td className="py-3 px-4 text-slate-300">{alert.events_count} hits</td>
                     <td className="py-3 px-4">
@@ -276,6 +300,11 @@ export const Alerts: React.FC<AlertsProps> = ({
                     {selectedAlert.severity}
                   </span>
                   <h3 className="text-base font-bold text-white font-mono">{selectedAlert.scenario}</h3>
+                  {selectedAlert.is_simulated && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                      SIMULATED
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400 mt-1">{selectedAlert.message}</p>
               </div>

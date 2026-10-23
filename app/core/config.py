@@ -1,4 +1,5 @@
 """Spork-IDS Application Configuration."""
+import os
 from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     SPORK_ENV: str = "development"
 
     # Database settings
-    SPORK_DATABASE_URL: str = "sqlite:///./data/spork.db"
+    SPORK_DATABASE_URL: str = "sqlite:////tmp/spork.db" if os.environ.get("VERCEL") else "sqlite:///./data/spork.db"
 
     # Security settings
     SPORK_API_KEY: Optional[str] = None

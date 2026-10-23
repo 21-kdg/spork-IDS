@@ -40,6 +40,7 @@ export interface Alert {
   stop_at: string;
   created_at: string;
   status: string;
+  is_simulated?: boolean;
   meta_data: {
     contributing_events?: Array<{
       source_ip?: string;
@@ -67,6 +68,7 @@ export interface SecurityEvent {
   action: string;
   raw_log: string;
   is_suspicious: boolean;
+  is_simulated?: boolean;
   meta_data: Record<string, any>;
   enrichment: {
     country?: string;
@@ -132,3 +134,49 @@ export interface SystemSettings {
   crowdsec_lapi_url: string;
   crowdsec_connected: boolean;
 }
+
+export interface SimulationScenario {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  default_ip: string;
+  sample_payload: string;
+  bucket_type: string;
+  burst_count: number;
+}
+
+export interface SimulationLaunchResult {
+  status: string;
+  scenario: string;
+  attacker_ip: string;
+  events_generated: number;
+  overflow_triggered: boolean;
+  logs_generated: string[];
+  alerts_created: Array<{
+    id: number;
+    uuid: string;
+    scenario: string;
+    severity: string;
+    source_ip: string;
+    message: string;
+  }>;
+  decisions_created: Array<{
+    id: number;
+    type: string;
+    value: string;
+    duration: string;
+    scenario: string;
+  }>;
+  message: string;
+}
+
+export interface SimulationStatus {
+  is_running: boolean;
+  interval_seconds: number;
+  total_simulated_events: number;
+  total_simulated_alerts: number;
+  active_scenario?: string | null;
+  last_run_timestamp?: string | null;
+}
+

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ScenarioInfo } from '../types';
 import { api } from '../services/api';
+import { AttackSimulatorWidget } from '../components/AttackSimulatorWidget';
 
 export const Detection: React.FC = () => {
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
@@ -140,6 +141,9 @@ export const Detection: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Live Intrusion Simulation Engine */}
+      <AttackSimulatorWidget onRefresh={loadScenarios} />
 
       {/* Interactive Scenario Sandbox Evaluator */}
       <div className="bg-[#0F172A] border border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">

@@ -1,12 +1,17 @@
 """Detection scenarios and live evaluation sandbox endpoints."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 from app.models.schemas import (
     ScenarioListResponse,
     ScenarioInfo,
     ScenarioEvaluateRequest,
     ScenarioEvaluateResponse,
+    SimulationLaunchRequest,
+    SimulationLaunchResponse,
 )
 from app.detection.engine import engine as detection_engine
+from app.services.simulator import simulator
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
 
@@ -47,3 +52,19 @@ def evaluate_scenario_sandbox(req: ScenarioEvaluateRequest):
         meta_data=req.meta_data,
     )
     return ScenarioEvaluateResponse(**result)
+
+
+@router.post("/simulate", response_model=SimulationLaunchResponse)
+def simulate_scenario(req: SimulationLaunchRequest, db: Session = Depends(get_db)):
+    """
+    Executes a real simulation burst against the live detection engine for this scenario.
+    Generates logs, updates bucket stats, and produces real alerts/bans.
+    """
+    result = simulator.launch_attack_simulation(
+        db=db,
+        scenario_name=req.scenario,
+        source_ip=req.source_ip,
+        count=req.count,
+    )
+    return SimulationLaunchResponse(**result)
+

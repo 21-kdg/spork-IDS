@@ -1,0 +1,11 @@
+{
+  "name": "spork-ids",
+  "version": "1.0.0",
+  "description": "AI-Powered Intrusion Detection System & Live Attack Simulator",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev",
+    "start": "python run.py"
+  }
+}

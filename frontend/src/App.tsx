@@ -47,23 +47,10 @@ export const App: React.FC = () => {
   }, []);
 
   const handleSimulateAttack = async () => {
-    const randomOctet = Math.floor(Math.random() * 200) + 10;
-    const attackerIp = `198.51.100.${randomOctet}`;
-    const simulatedAttackLogs = [
-      `Oct 23 16:00:01 srv sshd[100]: Failed password for invalid user admin from ${attackerIp} port 4001 ssh2`,
-      `Oct 23 16:00:03 srv sshd[101]: Failed password for invalid user root from ${attackerIp} port 4002 ssh2`,
-      `Oct 23 16:00:05 srv sshd[102]: Failed password for invalid user oracle from ${attackerIp} port 4003 ssh2`,
-      `Oct 23 16:00:07 srv sshd[103]: Failed password for invalid user deploy from ${attackerIp} port 4004 ssh2`,
-      `Oct 23 16:00:09 srv sshd[104]: Failed password for invalid user test from ${attackerIp} port 4005 ssh2`,
-      `Oct 23 16:00:11 srv sshd[105]: Failed password for invalid user ubuntu from ${attackerIp} port 4006 ssh2`,
-    ];
-
     try {
-      setToastMessage(`Simulating SSH Brute Force attack from ${attackerIp}...`);
-      const res = await api.ingestRawLogs(simulatedAttackLogs, 'ssh');
-      setToastMessage(
-        `Simulation executed! Ingested 6 logs. Triggered ${res.alerts_triggered} alert(s) and banned ${attackerIp}.`
-      );
+      setToastMessage('Simulating SSH Brute Force intrusion attack against engine...');
+      const res = await api.launchSimulation({ scenario: 'spork/ssh-bf' });
+      setToastMessage(res.message);
       fetchTelemetry(false);
       setTimeout(() => setToastMessage(null), 6000);
     } catch (err: any) {
@@ -121,6 +108,7 @@ export const App: React.FC = () => {
                 setSelectedAlertForModal(alert);
                 setCurrentPage('alerts');
               }}
+              onRefresh={() => fetchTelemetry(true)}
             />
           )}
 

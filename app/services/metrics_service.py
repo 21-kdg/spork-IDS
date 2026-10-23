@@ -84,6 +84,7 @@ class MetricsService:
                 "stop_at": a.stop_at.isoformat() if a.stop_at else "",
                 "created_at": a.created_at.isoformat() if a.created_at else "",
                 "status": a.status,
+                "is_simulated": bool(a.is_simulated),
                 "meta_data": a.meta_data,
                 "decisions": [
                     {

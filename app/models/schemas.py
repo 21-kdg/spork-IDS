@@ -42,6 +42,7 @@ class EventResponse(BaseModel):
     action: str
     raw_log: str
     is_suspicious: bool
+    is_simulated: bool = False
     meta_data: Dict[str, Any] = {}
     enrichment: Dict[str, Any] = {}
 
@@ -122,6 +123,7 @@ class AlertResponse(BaseModel):
     stop_at: datetime
     created_at: datetime
     status: str
+    is_simulated: bool = False
     meta_data: Dict[str, Any] = {}
     decisions: List[DecisionResponse] = []
 
@@ -240,3 +242,51 @@ class CrowdSecTestResponse(BaseModel):
     message: str
     version: Optional[str] = None
     latency_ms: Optional[float] = None
+
+
+# ---------------------------------------------------------------------------
+# Simulation Schemas
+# ---------------------------------------------------------------------------
+
+class SimulationScenarioMeta(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    default_ip: str
+    sample_payload: str
+    bucket_type: str
+    burst_count: int
+
+
+class SimulationLaunchRequest(BaseModel):
+    scenario: str = Field(..., description="Target scenario: spork/ssh-bf, spork/http-sqli, spork/http-path-traversal, spork/http-crawl-bf, spork/port-scan, spork/auth-credential-stuffing, or benign")
+    source_ip: Optional[str] = Field(None, description="Custom attacker IP or blank for realistic default")
+    count: Optional[int] = Field(None, description="Custom event count to generate")
+
+
+class SimulationLaunchResponse(BaseModel):
+    status: str
+    scenario: str
+    attacker_ip: str
+    events_generated: int
+    overflow_triggered: bool
+    logs_generated: List[str]
+    alerts_created: List[Dict[str, Any]] = []
+    decisions_created: List[Dict[str, Any]] = []
+    message: str
+
+
+class SimulationStatusResponse(BaseModel):
+    is_running: bool
+    interval_seconds: float
+    total_simulated_events: int
+    total_simulated_alerts: int
+    active_scenario: Optional[str] = None
+    last_run_timestamp: Optional[str] = None
+
+
+class SimulationStartRequest(BaseModel):
+    interval_seconds: float = Field(3.0, ge=1.0, le=60.0, description="Seconds between simulation bursts")
+    include_attacks: bool = Field(True, description="Whether to include periodic attack bursts alongside benign traffic")
+

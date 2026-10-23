@@ -36,10 +36,14 @@ def _is_ssh_bf(event: Dict[str, Any]) -> bool:
     service = event.get("service", "").lower()
     action = event.get("action", "").lower()
     meta = event.get("meta_data", {})
-    return (
-        service == "ssh"
-        and (action == "failed_login" or meta.get("log_type") in ["ssh_auth_failure", "ssh_invalid_user"])
+    raw = event.get("raw_log", "").lower()
+    is_ssh = service in ["ssh", "sshd"] or "ssh" in raw or "sshd[" in raw
+    is_fail = (
+        action in ["failed_login", "failed_auth", "ssh_auth_failure"]
+        or meta.get("log_type") in ["ssh_auth_failure", "ssh_invalid_user"]
+        or any(k in raw for k in ["failed password", "authentication failure", "invalid user", "failed publickey", "ssh auth failed"])
     )
+    return is_ssh and is_fail
 
 
 def _is_http_crawl(event: Dict[str, Any]) -> bool:

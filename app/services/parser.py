@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 # Pre-compiled Regex Patterns
 
 SSH_FAILED_PWD_RE = re.compile(
-    r"Failed password for (?:invalid user )?(?P<user>\S+) from (?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+) port (?P<port>\d+)",
+    r"Failed (?:password|publickey|none|keyboard-interactive) for (?:invalid user )?(?P<user>\S+) from (?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+) port (?P<port>\d+)",
     re.IGNORECASE,
 )
 SSH_INVALID_USER_RE = re.compile(
@@ -15,7 +15,19 @@ SSH_INVALID_USER_RE = re.compile(
     re.IGNORECASE,
 )
 SSH_ACCEPTED_RE = re.compile(
-    r"Accepted password for (?P<user>\S+) from (?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+) port (?P<port>\d+)",
+    r"Accepted (?:password|publickey) for (?P<user>\S+) from (?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+) port (?P<port>\d+)",
+    re.IGNORECASE,
+)
+SSH_AUTH_FAIL_RE = re.compile(
+    r"(?:sshd\[\d+\]:\s*)?(?:ssh\s+)?auth(?:entication)?\s+failed\s+(?:for\s+(?:user\s+)?(?P<user>\S+)\s+)?from\s+(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+)(?:\s+port\s+(?P<port>\d+))?",
+    re.IGNORECASE,
+)
+SSH_PAM_FAILURE_RE = re.compile(
+    r".*(?:pam_unix\(sshd:auth\):|sshd\[\d+\]:)\s*authentication failure;.*rhost=(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+)(?:.*user=(?P<user>\S+))?",
+    re.IGNORECASE,
+)
+SSH_PREAUTH_RE = re.compile(
+    r".*Connection closed by (?:authenticating user )?(?P<user>\S+)?\s*(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}|[a-fA-F0-9:]+)\s+port\s+(?P<port>\d+)\s+\[preauth\]",
     re.IGNORECASE,
 )
 
@@ -113,6 +125,69 @@ def parse_log_line(raw_line: str, service_hint: Optional[str] = None) -> ParsedE
                     "log_type": "ssh_auth_success",
                 },
             )
+
+        match_auth_fail = SSH_AUTH_FAIL_RE.search(line)
+        if match_auth_fail:
+            return ParsedEvent(
+                source_ip=match_auth_fail.group("ip"),
+                service="ssh",
+                action="failed_login",
+                raw_log=line,
+                is_suspicious=True,
+                meta_data={
+                    "user": (match_auth_fail.group("user") or "unknown").rstrip(",;"),
+                    "port": int(match_auth_fail.group("port")) if match_auth_fail.group("port") else 22,
+                    "log_type": "ssh_auth_failure",
+                },
+            )
+
+        match_pam = SSH_PAM_FAILURE_RE.search(line)
+        if match_pam:
+            return ParsedEvent(
+                source_ip=match_pam.group("ip"),
+                service="ssh",
+                action="failed_login",
+                raw_log=line,
+                is_suspicious=True,
+                meta_data={
+                    "user": (match_pam.group("user") or "unknown").rstrip(",;"),
+                    "port": 22,
+                    "log_type": "ssh_auth_failure",
+                },
+            )
+
+        match_preauth = SSH_PREAUTH_RE.search(line)
+        if match_preauth:
+            return ParsedEvent(
+                source_ip=match_preauth.group("ip"),
+                service="ssh",
+                action="failed_login",
+                raw_log=line,
+                is_suspicious=True,
+                meta_data={
+                    "user": (match_preauth.group("user") or "unknown").rstrip(",;"),
+                    "port": int(match_preauth.group("port")) if match_preauth.group("port") else 22,
+                    "log_type": "ssh_auth_failure",
+                },
+            )
+
+        # Generic SSH failure fallback if "ssh" in line and mentions failure
+        line_low = line.lower()
+        if any(w in line_low for w in ["failed", "failure", "invalid", "error", "auth failed"]):
+            ip_m = GENERIC_IPV4_RE.search(line)
+            if ip_m:
+                return ParsedEvent(
+                    source_ip=ip_m.group(0),
+                    service="ssh",
+                    action="failed_login",
+                    raw_log=line,
+                    is_suspicious=True,
+                    meta_data={
+                        "user": "unknown",
+                        "port": 22,
+                        "log_type": "ssh_auth_failure",
+                    },
+                )
 
     # 2. HTTP / Nginx / Apache Log Parsing
     if service_hint == "nginx" or service_hint == "http" or ' "GET ' in line or ' "POST ' in line or ' "PUT ' in line or ' "DELETE ' in line:

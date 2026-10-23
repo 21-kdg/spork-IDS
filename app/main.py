@@ -37,7 +37,8 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.SPORK_CORS_ORIGINS if settings.SPORK_CORS_ORIGINS else ["*"],
+    allow_origins=settings.SPORK_CORS_ORIGINS if settings.SPORK_CORS_ORIGINS else ["http://localhost:5173"],
+    allow_origin_regex=r"https?://.*\.vercel\.app|https?://localhost.*|https?://127\.0\.0\.1.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

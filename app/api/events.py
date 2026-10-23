@@ -22,6 +22,7 @@ def list_events(
     db: Session = Depends(get_db),
     service: Optional[str] = Query(None, description="Filter by service name: ssh, nginx, syslog, windows, firewall"),
     is_suspicious: Optional[bool] = Query(None, description="Filter suspicious events only"),
+    is_simulated: Optional[bool] = Query(None, description="Filter simulated events only"),
     ip: Optional[str] = Query(None, description="Filter by source IP"),
     action: Optional[str] = Query(None, description="Filter by action name"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -34,6 +35,8 @@ def list_events(
         query = query.filter(EventModel.service == service.lower())
     if is_suspicious is not None:
         query = query.filter(EventModel.is_suspicious == is_suspicious)
+    if is_simulated is not None:
+        query = query.filter(EventModel.is_simulated == is_simulated)
     if ip:
         query = query.filter(EventModel.source_ip == ip.strip())
     if action:

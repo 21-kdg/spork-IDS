@@ -21,6 +21,7 @@ export const Events: React.FC = () => {
   const [pageSize] = useState(20);
   const [serviceFilter, setServiceFilter] = useState('');
   const [suspiciousOnly, setSuspiciousOnly] = useState(false);
+  const [simulatedOnly, setSimulatedOnly] = useState(false);
   const [searchIp, setSearchIp] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,6 +38,7 @@ export const Events: React.FC = () => {
       const res = await api.getEvents({
         service: serviceFilter || undefined,
         is_suspicious: suspiciousOnly ? true : undefined,
+        is_simulated: simulatedOnly ? true : undefined,
         ip: searchIp || undefined,
         page,
         page_size: pageSize,
@@ -52,7 +54,7 @@ export const Events: React.FC = () => {
 
   useEffect(() => {
     loadEvents();
-  }, [page, serviceFilter, suspiciousOnly]);
+  }, [page, serviceFilter, suspiciousOnly, simulatedOnly]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,6 +231,19 @@ export const Events: React.FC = () => {
             />
             <span>Suspicious only</span>
           </label>
+
+          <label className="flex items-center space-x-2 text-xs font-mono text-purple-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={simulatedOnly}
+              onChange={(e) => {
+                setSimulatedOnly(e.target.checked);
+                setPage(1);
+              }}
+              className="rounded bg-slate-900 border-slate-800 text-purple-500 focus:ring-0 focus:outline-none"
+            />
+            <span>Simulated only</span>
+          </label>
         </div>
       </div>
 
@@ -282,7 +297,16 @@ export const Events: React.FC = () => {
                             {ev.service}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-medium text-slate-200">{ev.action}</td>
+                        <td className="py-3 px-4 font-medium text-slate-200">
+                          <div className="flex items-center space-x-1.5">
+                            <span>{ev.action}</span>
+                            {ev.is_simulated && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                SIMULATED
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-sky-400 font-semibold">{ev.source_ip}</td>
                         <td className="py-3 px-4">
                           {ev.is_suspicious ? (

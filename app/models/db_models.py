@@ -27,6 +27,7 @@ class EventModel(Base):
     action = Column(String(64), index=True, default="log")
     raw_log = Column(Text, nullable=False)
     is_suspicious = Column(Boolean, default=False, index=True)
+    is_simulated = Column(Boolean, default=False, index=True)
     meta_json = Column(Text, default="{}")
     enrichment_json = Column(Text, default="{}")
 
@@ -72,6 +73,7 @@ class AlertModel(Base):
     stop_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     status = Column(String(32), default="active", index=True)  # active, resolved, dismissed
+    is_simulated = Column(Boolean, default=False, index=True)
     meta_json = Column(Text, default="{}")
 
     decisions = relationship("DecisionModel", back_populates="alert", cascade="all, delete-orphan")
